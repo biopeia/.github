@@ -1,0 +1,22 @@
+name: Architectural decision
+description: Evaluate architecture without implicit implementation authorization
+title: "[Architecture] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Decision question and affected boundaries
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Alternatives, trade-offs and risks
+    validations:
+      required: true
+  - type: textarea
+    id: authority
+    attributes:
+      label: ADR references and approval requirements
+    validations:
+      required: true
