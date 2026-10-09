@@ -1,0 +1,22 @@
+name: Engineering task
+description: Bounded engineering work
+title: "[Engineering] "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Scope, exclusions and authority
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Tests, evidence and dependencies
+    validations:
+      required: true
