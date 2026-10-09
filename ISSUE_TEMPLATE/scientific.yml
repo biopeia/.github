@@ -1,0 +1,25 @@
+name: Scientific investigation
+description: Research proposal; issue creation does not authorize execution
+title: "[Research] "
+body:
+  - type: markdown
+    attributes:
+      value: "Creating this issue does not authorize protocol changes, scientific execution or held-out data use."
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Question and falsifiable hypothesis
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Canonical protocol and required owner decisions
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Conditions, baselines and evidence
+    validations:
+      required: true
