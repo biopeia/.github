@@ -12,3 +12,7 @@ The [Biopeia Project](https://github.com/orgs/biopeia/projects/1) coordinates wo
 Risk is evaluated separately from authority. Neither an issue nor a green CI check authorizes experiment execution, scientific claims, repository cut-over or constitutional change.
 
 During migration, extracted repositories and open PRs are not proof of an approved transition. Retain the original canonical sources until explicit supersession.
+
+## Public .github review path
+
+Changes to this repository follow the enforced review/promotion path documented in [docs/review-path.md](docs/review-path.md). Direct publication to `main` is not the normal governed path.
