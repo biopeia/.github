@@ -2,6 +2,9 @@ name: Auto PR checks
 
 on:
   workflow_call:
+  pull_request:
+    paths:
+      - '.github/workflows/auto-pr-checks.yml'
 
 permissions:
   contents: read
