@@ -1,0 +1,76 @@
+name: Auto PR checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-pr-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Validate the shared pull request template
+        env:
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          body = os.environ.get("PR_BODY", "")
+          required = [
+              "Objective and linked issue",
+              "Changes and exclusions",
+              "Work class, risks and authority",
+              "Tests and evidence (with exact revisions)",
+              "Scientific limitations and review findings",
+              "Migration or cross-domain implications (if any)",
+          ]
+
+          lines = body.splitlines()
+          sections = {}
+          active = None
+          for line in lines:
+              match = re.match(r"^##\s+(.+?)\s*$", line)
+              if match:
+                  active = match.group(1)
+                  sections.setdefault(active, [])
+              elif active is not None:
+                  sections[active].append(line)
+
+          errors = []
+          for heading in required:
+              if heading not in sections:
+                  errors.append(f"Missing required section: '## {heading}'")
+                  continue
+              content = "\n".join(sections[heading]).strip()
+              content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL).strip()
+              if not content:
+                  errors.append(f"Section is empty: '## {heading}'")
+
+          objective = "\n".join(sections.get("Objective and linked issue", []))
+          issue_reference = re.compile(
+              r"(?<![A-Za-z0-9_])(?:#[0-9]+|biopeia/[A-Za-z0-9._-]+#[0-9]+|"
+              r"https://github\.com/biopeia/[A-Za-z0-9._-]+/issues/[0-9]+)"
+              r"\b",
+              re.IGNORECASE,
+          )
+          if not issue_reference.search(objective):
+              errors.append(
+                  "Link the execution Issue in 'Objective and linked issue' "
+                  "(for example, 'Closes #123' or a Biopeia Issue URL)."
+              )
+
+          if errors:
+              print("PR contract check failed:")
+              for error in errors:
+                  print(f"  - {error}")
+              sys.exit(1)
+
+          print("PR body contains all required sections and links an Issue.")
+          PY
