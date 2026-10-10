@@ -1,4 +1,5 @@
 name: Auto issue triage
+# Public reusable workflow: safe for public Biopeia caller repositories.
 
 on:
   workflow_call:
