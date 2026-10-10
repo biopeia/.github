@@ -1,0 +1,49 @@
+name: Auto issue triage
+# Public reusable workflow: safe for public Biopeia caller repositories.
+
+on:
+  workflow_call:
+
+permissions:
+  issues: write
+
+jobs:
+  triage:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Add an idempotent human triage checklist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPOSITORY: ${{ github.repository }}
+          MARKER: "<!-- biopeia-auto-issue-triage:v1 -->"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh api --paginate "repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments" --jq '.[].body' | grep -Fq "$MARKER"; then
+            echo "Triage checklist already exists."
+            exit 0
+          fi
+
+          body="$(cat <<'BODY'
+          <!-- biopeia-auto-issue-triage:v1 -->
+          ### Auto triage — revisión humana pendiente
+
+          Antes de mover esta Issue a **Ready**, confirma en el contrato de trabajo:
+
+          - Dominio responsable y otros repositorios afectados.
+          - Una persona responsable de la ejecución.
+          - Clase de trabajo y autoridad necesaria.
+          - Riesgo operativo y prioridad.
+          - Criterios de aceptación y dependencias.
+          - Decisiones o evidencias canónicas que condicionan el trabajo.
+
+          Esta lista no asigna clase, riesgo, prioridad ni estado, y no autoriza la ejecución. En particular, una Issue científica no autoriza por sí sola cambiar protocolos, ejecutar experimentos ni usar datos reservados.
+          BODY
+          )"
+
+          gh api --method POST "repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments" --field body="$body"

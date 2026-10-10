@@ -1,0 +1,49 @@
+name: Project 1 issue intake
+
+on:
+  workflow_call:
+    inputs:
+      app_id:
+        description: GitHub App ID
+        required: true
+        type: string
+      project_id:
+        description: Biopeia Project #1 node ID
+        required: true
+        type: string
+    secrets:
+      app_private_key:
+        description: Private key for the Biopeia Project Intake GitHub App
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  add_issue:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Create short-lived app token
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ inputs.app_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: biopeia
+          repositories: ${{ github.event.repository.name }}
+          permission-organization-projects: write
+
+      - name: Add issue to Biopeia Project #1
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          PROJECT_ID: ${{ inputs.project_id }}
+          ISSUE_ID: ${{ github.event.issue.node_id }}
+        shell: bash
+        run: |
+          gh api graphql \
+            -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) { item { id } } }' \
+            -F projectId="$PROJECT_ID" \
+            -F contentId="$ISSUE_ID"
