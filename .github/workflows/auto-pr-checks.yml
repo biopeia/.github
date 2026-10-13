@@ -13,7 +13,26 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Validate Dependabot-generated update metadata
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+
+          title = os.environ.get("PR_TITLE", "").strip()
+          body = os.environ.get("PR_BODY", "").strip()
+          if not title or not body:
+              print("Dependabot PR must include its generated update title and details.")
+              sys.exit(1)
+          print("Dependabot-authored update metadata is present; repository CI and security checks remain required.")
+          PY
       - name: Validate the shared pull request template
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         env:
           PR_BODY: ${{ github.event.pull_request.body || '' }}
         shell: bash
