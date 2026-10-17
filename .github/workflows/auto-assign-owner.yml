@@ -1,0 +1,63 @@
+name: Auto assign owner
+# Public reusable workflow: safe, least-privilege default owner assignment for Biopeia repositories.
+
+on:
+  workflow_call:
+    inputs:
+      assignee:
+        description: 'GitHub username to assign as default owner'
+        required: false
+        default: 'alessbarb'
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign-owner:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Assign default owner idempotently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSIGNEE: ${{ inputs.assignee || 'alessbarb' }}
+          REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork || false }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TARGET_NUMBER="${ISSUE_NUMBER:-$PR_NUMBER}"
+          if [ -z "$TARGET_NUMBER" ]; then
+            echo "No issue or pull_request number found in event context. Exiting safely."
+            exit 0
+          fi
+
+          if [ "$IS_FORK" = "true" ]; then
+            echo "Fork pull request detected with read-only token; skipping assignment safely."
+            exit 0
+          fi
+
+          echo "Checking current assignees for $REPOSITORY#$TARGET_NUMBER..."
+          CURRENT_ASSIGNEES=$(gh api "repos/$REPOSITORY/issues/$TARGET_NUMBER" --jq '.assignees[].login' 2>/dev/null || true)
+
+          if echo "$CURRENT_ASSIGNEES" | grep -Fqx "$ASSIGNEE"; then
+            echo "Assignee '$ASSIGNEE' is already assigned to $REPOSITORY#$TARGET_NUMBER. Nothing to do."
+            exit 0
+          fi
+
+          echo "Assigning '$ASSIGNEE' to $REPOSITORY#$TARGET_NUMBER..."
+          if ! gh api --method POST "repos/$REPOSITORY/issues/$TARGET_NUMBER/assignees" -f "assignees[]=$ASSIGNEE" >/dev/null 2>&1; then
+            echo "Notice: Could not assign '$ASSIGNEE' (insufficient permissions or read-only token). Exiting safely."
+            exit 0
+          fi
+
+          echo "Successfully assigned '$ASSIGNEE' to $REPOSITORY#$TARGET_NUMBER."
